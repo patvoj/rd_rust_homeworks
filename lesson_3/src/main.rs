@@ -15,12 +15,12 @@ fn main() {
 
     let res = match op.as_str() {
         "lowercase" => to_lower_case(&text),
-        "upercase" => to_uper_case(&text),
+        "upercase" => to_upper_case(&text),
         "no-spaces" => remove_spaces(&text),
         "slugify" => make_slugify(&text),
         "reverse" => reverse_string(&text),
         "binary" => to_binary(&text),
-        "csv" => todo!(),
+        "csv" => csv(&text),
         _ => {
             eprintln!("Invalid operation: {}", op);
             exit(1);
@@ -41,7 +41,7 @@ fn to_lower_case(input: &str) -> Result<String, Box<dyn Error>> {
     Ok(input.to_lowercase())
 }
 
-fn to_uper_case(input: &str) -> Result<String, Box<dyn Error>> {
+fn to_upper_case(input: &str) -> Result<String, Box<dyn Error>> {
     validate_input(input)?;
     Ok(input.to_uppercase())
 }
@@ -68,6 +68,28 @@ fn to_binary(input: &str) -> Result<String, Box<dyn Error>> {
         .map(|c| format!("{:08b}", c as u8))
         .collect::<Vec<String>>()
         .join(" "))
+}
+
+fn csv(input: &str) -> Result<String, Box<dyn Error>> {
+    validate_input(input)?;
+
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .delimiter(b',')
+        .trim(csv::Trim::All)
+        .from_reader(input.as_bytes());
+
+    let mut records = Vec::new();
+    records.push(reader.headers()?.clone());
+    records.extend(reader.records().filter_map(Result::ok));
+
+    let output = records
+        .iter()
+        .map(|record| record.iter().collect::<Vec<&str>>().join(" "))
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    Ok(output)
 }
 
 fn validate_input(input: &str) -> Result<(), Box<dyn Error>> {
