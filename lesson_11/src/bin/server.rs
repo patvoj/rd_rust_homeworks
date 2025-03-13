@@ -10,7 +10,7 @@ use lesson_11::{deserialize_message, MessageType};
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // default to localhost:11111 if no arguments provided
+    // Default to localhost:11111 if no arguments provided
     let host = args.get(1).map_or("127.0.0.1".to_string(), |s| s.clone());
     let port = args.get(2).map_or("11111".to_string(), |s| s.clone());
     let address = format!("{}:{}", host, port);
@@ -29,6 +29,7 @@ fn run_server(address: &str) {
                 let addr = stream.peer_addr().unwrap();
                 clients.insert(addr, stream.try_clone().unwrap());
 
+                // Handle the client in a separate thread
                 std::thread::spawn(move || {
                     handle_client(stream);
                 });
@@ -47,6 +48,7 @@ fn handle_client(mut stream: TcpStream) {
         return;
     };
 
+    // Convert received bytes into message length
     let len = u32::from_be_bytes(len_bytes) as usize;
     let mut buffer = vec![0u8; len];
 
@@ -55,6 +57,7 @@ fn handle_client(mut stream: TcpStream) {
         return;
     }
 
+    // Deserialize the received message and handle different types
     match deserialize_message(&buffer) {
         MessageType::Text(msg) => println!("Received: {}", msg),
         MessageType::Image(_) => println!("Received an image"),
