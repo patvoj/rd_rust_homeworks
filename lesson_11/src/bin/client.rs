@@ -1,9 +1,10 @@
-use log::info;
+use log::{error, info};
 use std::env;
 use std::io::{self, Write};
 use std::net::TcpStream;
+use std::thread;
 
-use lesson_11::{serialize_message, MessageType};
+use lesson_11::MessageType;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -19,6 +20,28 @@ fn main() {
 
 fn run_client(address: &str) {
     info!("Connected to server. Type 'exit' to quit.");
+    let mut stream = TcpStream::connect(address).unwrap();
+    let mut stream_clone = TcpStream::try_clone(&stream).unwrap();
+
+    let reader_handle = thread::spawn(move || {
+        let mut stream = stream_clone;
+        loop {
+            let msg = MessageType::receive(&mut stream);
+
+            if let Err(e) = msg {
+                error!("error: {e}");
+                break;
+            };
+
+            let msg = msg.unwrap();
+
+            match msg {
+                MessageType::File(_, _) => todo!(),
+                MessageType::Image(_) => todo!(),
+                MessageType::Text(text) => println!("{text}"),
+            }
+        }
+    });
 
     loop {
         print!("Enter message: ");
@@ -35,18 +58,8 @@ fn run_client(address: &str) {
 
         // Create a message and send it to the server
         let message = MessageType::Text(input.to_string());
-        send_message(address, &message);
+        message.send(&mut stream); // handle error
     }
-}
 
-fn send_message(address: &str, message: &MessageType) {
-    let serialized = serialize_message(message);
-    let mut stream = TcpStream::connect(address).unwrap();
-
-    // Send the length of the serialized message (as 4-byte value)
-    let len = serialized.len() as u32;
-    stream.write(&len.to_be_bytes()).unwrap();
-
-    // Send the serialized message
-    stream.write_all(&serialized.as_bytes()).unwrap();
+    reader_handle.join();
 }

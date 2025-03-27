@@ -4,8 +4,9 @@ use std::env;
 use std::io::Read;
 use std::net::SocketAddr;
 use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
 
-use lesson_11::{deserialize_message, MessageType};
+use lesson_11::MessageType;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -19,19 +20,26 @@ fn main() {
     run_server(&address);
 }
 
+type Clients = Arc<Mutex<HashMap<SocketAddr, TcpStream>>>;
+
 fn run_server(address: &str) {
     let listener = TcpListener::bind(address).unwrap();
-    let mut clients: HashMap<SocketAddr, TcpStream> = HashMap::new();
+    let clients: Clients = Arc::new(Mutex::new(HashMap::new()));
 
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 let addr = stream.peer_addr().unwrap();
-                clients.insert(addr, stream.try_clone().unwrap());
+
+                {
+                    let mut lock = clients.lock().unwrap();
+                    lock.insert(addr, stream.try_clone().unwrap());
+                } // <-- lock dropped
 
                 // Handle the client in a separate thread
+                let clients_clone = Arc::clone(&clients);
                 std::thread::spawn(move || {
-                    handle_client(stream);
+                    handle_client(stream, addr, clients_clone);
                 });
             }
             Err(e) => {
@@ -41,26 +49,38 @@ fn run_server(address: &str) {
     }
 }
 
-fn handle_client(mut stream: TcpStream) {
-    let mut len_bytes = [0u8; 4];
-    if stream.read_exact(&mut len_bytes).is_err() {
-        error!("Failed to read message length.");
-        return;
-    };
+fn handle_client(mut stream: TcpStream, addr: SocketAddr, clients: Clients) {
+    loop {
+        let msg = MessageType::receive(&mut stream);
 
-    // Convert received bytes into message length
-    let len = u32::from_be_bytes(len_bytes) as usize;
-    let mut buffer = vec![0u8; len];
+        match &msg {
+            Ok(MessageType::Text(msg)) => println!("Received: {}", msg),
+            Ok(MessageType::Image(_)) => println!("Received an image"),
+            Ok(MessageType::File(name, _)) => println!("Received file: {}", name),
+            Err(e) => {
+                error!("error: {e}");
+                return;
+            }
+        }
 
-    if stream.read_exact(&mut buffer).is_err() {
-        error!("Failed to read message data.");
-        return;
-    }
+        let msg = msg.unwrap(); // always ok
 
-    // Deserialize the received message and handle different types
-    match deserialize_message(&buffer) {
-        MessageType::Text(msg) => println!("Received: {}", msg),
-        MessageType::Image(_) => println!("Received an image"),
-        MessageType::File(name, _) => println!("Received file: {}", name),
+        let mut clients_lock = clients.lock().unwrap();
+
+        let mut clients_to_remove = vec![];
+        for (client_addr, mut client_stream) in clients_lock.iter_mut() {
+            if *client_addr == addr {
+                continue;
+            }
+
+            if let Err(e) = msg.send(&mut client_stream) {
+                info!("Failed to send message to {client_addr}, closing...");
+                clients_to_remove.push(client_addr.clone());
+            }
+        }
+
+        for client in clients_to_remove {
+            clients_lock.remove(&client);
+        }
     }
 }
