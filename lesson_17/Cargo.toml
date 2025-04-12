@@ -1,0 +1,2 @@
+[workspace]
+members = ["cmd/server", "services/messages"]

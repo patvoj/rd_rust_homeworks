@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16.4
+    container_name: rd-rust-db
+    environment:
+      POSTGRES_DB: rd-rust-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+volumes:
+  db-data:
