@@ -17,19 +17,19 @@ impl MessageRepository {
     }
 
     pub async fn create_message(&self, message: &MessageType) -> Result<i64, Error> {
+        let json_value =
+            serde_json::to_value(message).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+        println!("Storing JSON: {}", json_value);
+
         const QUERY: &str = "
             INSERT INTO messages (message)
-            SELECT $1
-            WHERE NOT EXISTS (
-                SELECT 1 FROM messages WHERE message = $1
-            )
+            VALUES ($1)
             RETURNING id;
         ";
 
-        let serialized_message = serde_json::to_string(&message).unwrap();
-
         let row: (i64,) = sqlx::query_as(QUERY)
-            .bind(serialized_message)
+            .bind(json_value)
             .fetch_one(&self.pool)
             .await?;
 
@@ -44,9 +44,16 @@ impl MessageRepository {
         let mut messages: Vec<MessageType> = Vec::new();
 
         for row in rows {
-            let message: String = row.try_get("message")?;
-            let deserialized_message: MessageType = serde_json::from_str(&message).unwrap();
-            messages.push(deserialized_message);
+            let json_value: serde_json::Value = row.try_get("message")?;
+
+            println!("Retrieved JSON: {}", json_value);
+
+            let message = serde_json::from_value(json_value).map_err(|e| {
+                println!("Deserialization error: {}", e);
+                sqlx::Error::Decode(Box::new(e))
+            })?;
+
+            messages.push(message);
         }
 
         Ok(messages)
