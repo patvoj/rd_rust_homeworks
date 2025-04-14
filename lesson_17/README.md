@@ -1,47 +1,55 @@
-# Rust TCP Chat Server & Client
+# 📬 Axum Message Service
 
-This project is a simple TCP-based chat server and client built using Rust and Tokio for asynchronous networking. The server supports multiple clients and includes basic user authentication with a PostgreSQL database.
+A small, modular message service built with Rust using the Axum framework, SQLx for database interaction, and HTMX + Maud for a dynamic frontend experience.
 
-## Features
+## ✨ Features
 
-- **TCP server** that handles multiple clients concurrently.
-- **Client application** to send and receive messages.
-- **Message types**: Supports text, images, and files.
-- **User authentication** using PostgreSQL.
-- **Database persistence** for storing messages and user credentials.
-- **Asynchronous operations** with Tokio.
+🧩 Modular architecture with clear separation of concerns\
+🌐 RESTful API with Axum\
+🗃️ PostgreSQL database for message storage\
+⚡ Async operations using Tokio\
+💬 JSON-based message types: text, image, and file\
+🧠 Server-side rendering using Maud\
+🔁 Interactive frontend with HTMX
 
-## Installation
+## 📦 Installation
 
-### Prerequisites
+### ✅ Prerequisites
+
+Rust & Cargo
+Docker (for PostgreSQL)
+PostgreSQL CLI tools (optional, for DB inspection)
 
 Ensure you have the following installed:
 
 - Rust & Cargo ([Install Rust](https://www.rust-lang.org/tools/install))
 - PostgreSQL ([Install PostgreSQL](https://www.postgresql.org/download/))
 
-### Clone Repository
+### 🚀 Clone the Repository
 
 ```sh
 $ git clone https://github.com/patvoj/rd_rust_homeworks.git
 $ cd lesson_17
 ```
 
-### Configure Database
+### 🐘 Start PostgreSQL
 
-1. Start PostgreSQL and create a database:
+1. Run PostgreSQL
 
-```sh
-$ psql -U postgres
-postgres=# CREATE DATABASE rd-rust-db;
-postgres=# \\q
+```
+docker-compose up -d
 ```
 
-2. Update the database connection string in `db_init()` function inside `server.rs`:
+DB URL: postgres://admin:adminpassword@localhost/rd-rust-db
 
-```rust
-.connect("postgres://admin:adminpassword@localhost/rd-rust-db")
+2. 🦀 Run the Axum Server
+
 ```
+cd cmd/server
+cargo run
+```
+
+App runs at http://localhost:3000
 
 ### Build and Run
 
@@ -63,44 +71,62 @@ The client connects to `127.0.0.1:11111` by default.
 
 ## Usage
 
-### Server
+## 📬 API Endpoints
 
-- Starts and listens for incoming client connections.
-- Authenticates users and stores messages in the database.
-- Broadcasts messages to all connected clients.
+| Method | Path        | Request Body (Example)                                                                                                                                                                            | Description            |
+| ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| GET    | `/messages` | _None_                                                                                                                                                                                            | Retrieve all messages  |
+| POST   | `/messages` | `{ "type": "Text", "data": "Hello!" }` <br> `{ "type": "Image", "data": "https://example.com/image.png" }` <br> `{ "type": "File", "data": { "filename": "notes.txt", "content": "base64..." } }` | Submit a new message   |
+| GET    | `/`         | _None_                                                                                                                                                                                            | Load the HTML frontend |
 
-### Client
+### 🖥 Frontend
 
-- Connects to the server.
-- Prompts for username and password.
-- Sends messages and receives messages from other clients.
-- Type `exit` to disconnect.
+Built using HTMX for dynamic behavior
+Rendered with Maud (Rust-based HTML templating)
 
-## File Structure
+Includes:\
+📜 Message list\
+📝 Message submission form
+
+## 📁 Project Structure
 
 ```
-├── src
-│   ├── main.rs         # Server entry point
-│   ├── client.rs       # Client entry point
-│   ├── lib.rs          # MessageType handling
-│   ├── server.rs       # Server logic and database operations
-│   └── database.rs     # Database connection and queries
-│
-├── Cargo.toml          # Rust dependencies
-├── README.md           # Project documentation
+.
+├── cmd/
+│   └── server/               # Application entry point
+│       └── src/
+│           ├── main.rs       # Axum router and server startup
+│           └── db.rs         # DB connection and setup
+├── services/
+│   └── messages/
+│       └── src/
+│           ├── handler.rs    # Route handler logic
+│           ├── model.rs      # MessageType enum
+│           ├── repository.rs # DB interactions (Repo pattern)
+│           └── service.rs    # Message service wrapper
+├── templates/
+│   └── src/
+│       ├── index.rs          # HTML page
+│       ├── message_form.rs   # Form and table (Maud templates)
+│       └── lib.rs
+├── docker-compose.yml        # PostgreSQL setup
+├── README.md
 ```
 
-## Dependencies
+## 🛠 Dependencies
 
-- `tokio` - Asynchronous runtime.
-- `serde` - Serialization and deserialization.
-- `sqlx` - PostgreSQL support.
-- `anyhow` - Error handling.
-- `log` - Logging.
+- tokio – async runtime
+- axum – web framework
+- sqlx – DB layer
+- serde – serialization
+- anyhow – error handling
+- maud – server-side HTML rendering
+- htmx – frontend interactivity
 
-## Improvements & Future Enhancements
+## 🔮 Future Improvements
 
-- Add encryption for secure message transmission.
-- Implement a proper user registration and password hashing mechanism.
-- Enhance UI with a GUI client.
-- Implement private messaging.
+🔐 Add authentication (JWT or sessions)\
+🔏 Password hashing & user registration\
+📬 Private and group messaging support\
+💅 Enhanced frontend UI/UX with styles or a JS framework\
+📁 File upload support

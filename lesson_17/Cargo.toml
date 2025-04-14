@@ -1,2 +1,2 @@
 [workspace]
-members = ["cmd/server", "services/messages"]
+members = ["cmd/server", "services/messages", "templates"]

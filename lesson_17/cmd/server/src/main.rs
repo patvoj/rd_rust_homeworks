@@ -7,6 +7,7 @@ use db::db_init;
 use messages::handler::{create_message, get_all_messages};
 use messages::repository::{AppState, MessageRepository};
 use std::sync::Arc;
+use templates::index::index;
 
 mod db;
 
@@ -23,6 +24,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app = Router::new()
         .route("/messages", get(get_all_messages))
         .route("/messages", post(create_message))
+        .route("/", get(index))
         .with_state(app_state);
 
     // Start the server

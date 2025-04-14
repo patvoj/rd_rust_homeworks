@@ -11,5 +11,5 @@ pub enum MessageType {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct FileData {
     pub filename: String,
-    pub content: String,
+    pub content: String, // Typically base64-encoded
 }
