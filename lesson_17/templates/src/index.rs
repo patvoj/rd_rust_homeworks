@@ -1,8 +1,12 @@
-use crate::message_form::{messages_table, send_message_form};
-use axum::response::Html;
+use crate::message_form::send_message_form;
+use crate::message_table::message_table;
+use axum::{extract::State, response::Html};
 use maud::html;
+use messages::repository::AppState;
 
-pub async fn index() -> Html<String> {
+pub async fn index(State(state): State<AppState>) -> Html<String> {
+    let messages = state.repo.get_all_messages().await.unwrap_or_default();
+
     let page = html! {
         (maud::DOCTYPE)
         html {
@@ -12,12 +16,15 @@ pub async fn index() -> Html<String> {
                 script src="https://unpkg.com/htmx.org@1.9.2" {}
             }
             body {
-                h3 { "All messages:" }
-                (messages_table())
-                h3 { "Send a Message" }
-                (send_message_form())
+                div id="parent-div" {
+                    h3 { "All messages:" }
+                    (message_table(&messages))
+                    h3 { "Send a Message" }
+                    (send_message_form())
+                }
             }
         }
     };
+
     Html(page.into_string())
 }

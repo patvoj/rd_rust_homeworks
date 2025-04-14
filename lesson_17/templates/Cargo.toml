@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+messages = { path = "../services/messages" }
 maud = { version = "*", features = ["axum"] }
 axum = "0.8.3"

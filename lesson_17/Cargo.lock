@@ -1712,6 +1712,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "maud 0.25.0",
+ "messages",
 ]
 
 [[package]]
