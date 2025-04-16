@@ -1,5 +1,5 @@
 use maud::{html, Markup};
-use messages::model::MessageType;
+use shared::model::MessageType;
 
 pub fn message_table(messages: &[MessageType]) -> Markup {
     html! {

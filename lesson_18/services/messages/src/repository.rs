@@ -1,4 +1,6 @@
-use crate::model::MessageType;
+use async_trait::async_trait;
+use shared::model::MessageType;
+use shared::MessageRepositoryTrait;
 use sqlx::Row;
 use sqlx::{Error, PgPool};
 
@@ -18,10 +20,10 @@ impl MessageRepository {
         println!("Storing JSON: {}", json_value);
 
         const QUERY: &str = "
-            INSERT INTO messages (message)
-            VALUES ($1)
-            RETURNING id;
-        ";
+        INSERT INTO messages (message)
+        VALUES ($1)
+        RETURNING id;
+    ";
 
         let row: (i64,) = sqlx::query_as(QUERY)
             .bind(json_value)
@@ -52,5 +54,17 @@ impl MessageRepository {
         }
 
         Ok(messages)
+    }
+}
+
+#[async_trait]
+impl MessageRepositoryTrait for MessageRepository {
+    async fn create_message(&self, message: &MessageType) -> Result<i64, Error> {
+        let _ = serde_json::to_value(message).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        self.create_message(message).await
+    }
+
+    async fn get_all_messages(&self) -> Result<Vec<MessageType>, Error> {
+        self.get_all_messages().await
     }
 }

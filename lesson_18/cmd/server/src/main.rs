@@ -8,9 +8,9 @@ use templates::index::index;
 
 use db::db_init;
 use messages::handler::{create_message, get_all_messages};
-use messages::repository::{AppState, MessageRepository};
+use messages::repository::MessageRepository;
 use shared::app_metrics::AppMetrics;
-use shared::AppState;
+use shared::{AppState, MessageRepositoryTrait};
 
 mod db;
 
@@ -25,17 +25,23 @@ async fn main() -> Result<(), anyhow::Error> {
     // Create the repository and wrap it in shared app state
     let repo = Arc::new(MessageRepository::new(pool));
     let app_state = AppState {
-        repo,
+        repo: repo as Arc<dyn MessageRepositoryTrait>,
         metrics: metrics.clone(),
     };
 
     // Build the router
-    let app = Router::new()
-        .route("/", get(index))
-        .route("/metrics", get(AppMetrics::metrics)) // Use the imported AppMetrics
-        .route("/messages", get(get_all_messages))
-        .route("/messages", post(create_message))
-        .with_state(app_state);
+    let app =
+        Router::new()
+            .route("/", get(index))
+            .route(
+                "/metrics",
+                get(|state: axum::extract::State<AppState>| async move {
+                    state.metrics.gather_metrics()
+                }),
+            )
+            .route("/messages", get(get_all_messages))
+            .route("/messages", post(create_message))
+            .with_state(app_state);
 
     // Start the server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();

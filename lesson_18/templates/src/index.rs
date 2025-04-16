@@ -2,11 +2,10 @@ use crate::message_form::send_message_form;
 use crate::message_table::message_table;
 use axum::{extract::State, response::Html};
 use maud::html;
-use shared::app_metrics::AppMetrics;
 use shared::AppState;
 
 pub async fn index(State(state): State<AppState>) -> Html<String> {
-    state.metrics.api_calls_count.inc();
+    state.metrics.api_calls_total.inc();
     let messages = state.repo.get_all_messages().await.unwrap_or_default();
 
     let page = html! {

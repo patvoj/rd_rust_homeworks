@@ -4,7 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-messages = { path = "../services/messages" }
-axum = "0.8.3"
-prometheus = "0.14.0"
-serde = { version = "1.0", features = ["derive"] }
+async-trait = { workspace = true }
+prometheus = { workspace = true }
+axum = { version = "0.8.3", optional = true }
+tokio = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+sqlx = { workspace = true, features = [
+    "runtime-tokio",
+    "postgres",
+    "json",
+], optional = true }
+
+[features]
+default = ["serde_integration", "sqlx_integration"]
+serde_integration = ["serde", "serde_json"]
+sqlx_integration = ["sqlx"]
+axum_integration = ["axum"]

@@ -116,6 +116,7 @@ Includes:\
 - anyhow – error handling
 - maud – server-side HTML rendering
 - htmx – frontend interactivity
+- prometheus - mestrics
 
 ## 🔮 Future Improvements
 
